@@ -196,7 +196,7 @@
     <div class="exp-count"><b id="selCount">0</b> noticias seleccionadas para el resumen ejecutivo</div>
     <div class="exp-actions">
       <button class="exp-btn secondary" id="copyBtn" disabled>Copiar resumen</button>
-      <button class="exp-btn primary" id="exportBtn" disabled>Ver resumen ejecutivo</button>
+      <button class="exp-btn primary" id="exportBtn" disabled>Descargar resumen ejecutivo</button>
     </div>
   </div>
 </div>
@@ -352,6 +352,14 @@ function isRealEstateRelevant(text){
   return REAL_ESTATE_KEYWORDS.some(k => t.includes(k));
 }
 
+function hashString(str){
+  let hash = 0;
+  for(let i=0; i<str.length; i++){
+    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+
 function extractSource(title, fallback){
   const parts = title.split(' - ');
   if(parts.length > 1) return parts[parts.length-1].trim();
@@ -425,7 +433,7 @@ async function fetchFeed(feed){
     const cleanTitle = extractSource(item.title, feed.label) === item.title ? item.title : item.title.split(' - ').slice(0,-1).join(' - ');
     const src = extractSource(item.title, feed.label);
     return {
-      id: 'live-' + btoa(unescape(encodeURIComponent(item.link))).slice(0,24),
+      id: 'live-' + hashString(item.link),
       cat: categorize(item.title + ' ' + (item.description||'')),
       title: cleanTitle || item.title,
       source: src,
@@ -516,7 +524,7 @@ function buildSummaryDocumentHTML(){
       <h3>${i+1}. ${n.title}</h3>
       <p class="meta">${CAT_LABEL[n.cat]} &nbsp;·&nbsp; <b>${n.source}</b> &nbsp;·&nbsp; ${n.date}</p>
       <p class="body-text">${n.summary}</p>
-      <p class="link"><a href="${n.url}">${n.url}</a></p>
+      <p class="link"><a href="${n.url}">Ver noticia original &rarr;</a></p>
     </div>`).join('\n<hr class="sep">\n');
 
   return `<!DOCTYPE html>
@@ -576,13 +584,15 @@ function buildSummaryDocumentHTML(){
 document.getElementById('exportBtn').addEventListener('click', ()=>{
   if(selected.size===0) return;
   const html = buildSummaryDocumentHTML();
-  const win = window.open('', '_blank');
-  if(!win){
-    alert('El navegador bloqueó la ventana emergente. Permite pop-ups para este sitio e intenta de nuevo.');
-    return;
-  }
-  win.document.write(html);
-  win.document.close();
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `resumen-ejecutivo-grupo-zen-${new Date().toISOString().slice(0,10)}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 });
 
 document.getElementById('copyBtn').addEventListener('click', async ()=>{
