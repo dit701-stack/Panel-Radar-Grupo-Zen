@@ -55,6 +55,32 @@
   .refresh-btn:disabled{opacity:.4;cursor:default;}
   .live-badge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:#1e2a20;color:#8fcf83;padding:2px 6px;border-radius:2px;margin-left:6px;}
   .fallback-badge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:#2a2620;color:#d8b96a;padding:2px 6px;border-radius:2px;margin-left:6px;}
+  .manual-badge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:#241f2c;color:#c3a3e8;padding:2px 6px;border-radius:2px;margin-left:6px;}
+  .remove-link{font-size:11.5px;color:#b0766e;text-decoration:none;font-weight:600;}
+  .remove-link:hover{text-decoration:underline;}
+  .manual-form{display:none; margin-top:16px; background:var(--zen-panel); border:1px solid var(--zen-gold-dim); padding:20px;}
+  .manual-form.open{display:block;}
+  .manual-form-title{font-family:'Archivo',sans-serif; font-weight:700; font-size:14px; color:var(--zen-gold); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;}
+  .manual-form-hint{font-size:12.5px; color:var(--zen-white-dim); line-height:1.5; margin-bottom:16px; max-width:640px;}
+  .manual-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media(max-width:640px){.manual-grid{grid-template-columns:1fr;}}
+  .manual-field-full{grid-column:1/-1;}
+  .manual-field label{display:block; font-size:11px; color:var(--zen-white-dim); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px;}
+  .manual-field input, .manual-field select, .manual-field textarea{
+    width:100%; background:var(--zen-black); border:1px solid var(--zen-line); color:var(--zen-white);
+    font-family:'Inter',sans-serif; font-size:13px; padding:9px 11px; border-radius:2px; resize:vertical;
+  }
+  .manual-field input:focus, .manual-field select:focus, .manual-field textarea:focus{outline:none; border-color:var(--zen-gold-dim);}
+  .manual-error{color:#e2897e; font-size:12.5px; margin-top:10px; min-height:16px;}
+  .paywall-notice{
+    font-size:11.5px; color:#d8b96a; background:#211c12; border:1px solid #3a3120;
+    padding:8px 10px; margin-top:2px; line-height:1.5;
+  }
+  .paywall-notice .paywall-icon{font-style:normal; margin-right:2px;}
+  .paywall-notice a{color:#c8a24d; font-weight:600; text-decoration:none; display:inline-block; margin-top:2px;}
+  .paywall-notice a:hover{text-decoration:underline;}
+  .manual-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:16px;}
+  .manual-tag{background:#20242c; color:#c9a97a;}
   .filters{display:flex;gap:8px;flex-wrap:wrap;margin:28px 0 24px;}
   .filter-btn{
     font-family:'Inter',sans-serif;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
@@ -152,7 +178,55 @@
       <span class="live-dot pulsing" id="liveDot"></span>
       <span id="liveText">Conectando con fuentes en vivo…</span>
     </div>
-    <button class="refresh-btn" id="refreshBtn">Actualizar ahora</button>
+    <div style="display:flex; gap:8px;">
+      <button class="refresh-btn" id="addManualBtn">+ Agregar noticia (pegar texto)</button>
+      <button class="refresh-btn" id="refreshBtn">Actualizar ahora</button>
+    </div>
+  </div>
+
+  <div class="manual-form" id="manualForm">
+    <div class="manual-form-inner">
+      <div class="manual-form-title" id="manualFormTitle">Agregar noticia de pago (pegar texto completo)</div>
+      <div class="manual-form-hint" id="manualFormHint">Para noticias detrás de un muro de pago de tus suscripciones: copia el texto del artículo y pégalo aquí. El resumen ejecutivo usará este texto completo, no un fragmento.</div>
+      <div class="manual-grid">
+        <div class="manual-field">
+          <label>Título *</label>
+          <input type="text" id="mTitle" placeholder="Título de la noticia">
+        </div>
+        <div class="manual-field">
+          <label>Fuente *</label>
+          <input type="text" id="mSource" placeholder="El Financiero, La Nación, etc.">
+        </div>
+        <div class="manual-field">
+          <label>Fecha</label>
+          <input type="date" id="mDate">
+        </div>
+        <div class="manual-field">
+          <label>Categoría</label>
+          <select id="mCat">
+            <option value="auto">Detectar automáticamente</option>
+            <option value="mercado">Mercado</option>
+            <option value="zonas">Zonas de desarrollo</option>
+            <option value="financiero">Financiero</option>
+            <option value="regulatorio">Político y regulatorio</option>
+            <option value="segmentos">Segmentos</option>
+          </select>
+        </div>
+        <div class="manual-field manual-field-full">
+          <label>Enlace (opcional)</label>
+          <input type="text" id="mUrl" placeholder="https://...">
+        </div>
+        <div class="manual-field manual-field-full">
+          <label>Texto de la noticia *</label>
+          <textarea id="mText" rows="6" placeholder="Pega aquí el texto completo del artículo"></textarea>
+        </div>
+      </div>
+      <div class="manual-error" id="manualError"></div>
+      <div class="manual-actions">
+        <button class="exp-btn secondary" id="mCancel">Cancelar</button>
+        <button class="exp-btn primary" id="mSubmit">Agregar noticia</button>
+      </div>
+    </div>
   </div>
 
   <div class="filters" id="filters">
@@ -165,6 +239,7 @@
   </div>
 
   <div class="grid" id="grid"></div>
+
 
   <footer>
     <h2>Fuentes usadas en este panel</h2>
@@ -307,10 +382,63 @@ const SEED_NEWS = [
 
 const CAT_LABEL = {mercado:'Mercado', zonas:'Zonas de desarrollo', financiero:'Financiero', regulatorio:'Regulatorio', segmentos:'Segmentos'};
 
-let NEWS = SEED_NEWS.map(n => ({...n, origin:'seed'}));
+const MANUAL_STORAGE_KEY = 'zenPanelManualNews';
+let MANUAL_NEWS = [];
+try{
+  MANUAL_NEWS = JSON.parse(localStorage.getItem(MANUAL_STORAGE_KEY) || '[]');
+}catch(e){
+  MANUAL_NEWS = [];
+}
+
+const COMPLETIONS_STORAGE_KEY = 'zenPanelCompletions';
+let COMPLETIONS = {};
+try{
+  COMPLETIONS = JSON.parse(localStorage.getItem(COMPLETIONS_STORAGE_KEY) || '{}');
+}catch(e){
+  COMPLETIONS = {};
+}
+
+function saveCompletions(){
+  try{
+    localStorage.setItem(COMPLETIONS_STORAGE_KEY, JSON.stringify(COMPLETIONS));
+  }catch(e){
+    console.error('No se pudo guardar el texto completado:', e);
+  }
+}
+
+// Medios que normalmente muestran solo un fragmento gratis y requieren suscripción
+// para leer el artículo completo. Edita esta lista si cambian tus suscripciones.
+const PAYWALL_SOURCES = ['el financiero', 'elfinancierocr', 'la nación', 'la nacion', 'nacion.com', 'la república', 'la republica', 'larepublica.net'];
+
+function isLikelyPaywalled(n){
+  if(n.origin === 'manual' || n.completed) return false;
+  const s = (n.source || '').toLowerCase();
+  return PAYWALL_SOURCES.some(p => s.includes(p));
+}
+
+function applyCompletions(items){
+  return items.map(it => {
+    const c = COMPLETIONS[it.url];
+    if(c){
+      return {...it, fullText: c.fullText, summary: truncate(c.fullText, 220), completed: true};
+    }
+    return it;
+  });
+}
+
+let NEWS = applyCompletions([...MANUAL_NEWS, ...SEED_NEWS.map(n => ({...n, origin:'seed'}))]);
 let currentFilter = 'todas';
 const grid = document.getElementById('grid');
 const selected = new Set();
+let completingItemId = null;
+
+function saveManualNews(){
+  try{
+    localStorage.setItem(MANUAL_STORAGE_KEY, JSON.stringify(MANUAL_NEWS));
+  }catch(e){
+    console.error('No se pudo guardar la noticia manual:', e);
+  }
+}
 
 function stripHtml(str){
   const div = document.createElement('div');
@@ -372,6 +500,13 @@ function formatDate(d){
   }catch(e){ return ''; }
 }
 
+function badgeFor(n){
+  if(n.completed) return '<span class="manual-badge">Texto completado</span>';
+  if(n.origin==='manual') return '<span class="manual-badge">Agregada</span>';
+  if(n.origin==='live') return '<span class="live-badge">En vivo</span>';
+  return '<span class="fallback-badge">Curada</span>';
+}
+
 function render(){
   const items = currentFilter==='todas' ? NEWS : NEWS.filter(n=>n.cat===currentFilter);
   if(items.length===0){
@@ -384,13 +519,20 @@ function render(){
         <span class="tag tag-${n.cat}">${CAT_LABEL[n.cat]}</span>
       </div>
       <div class="card-title">${n.title}</div>
-      <div class="card-meta"><b>${n.source}</b>${n.origin==='live' ? '<span class="live-badge">En vivo</span>' : '<span class="fallback-badge">Curada</span>'} · ${n.date}</div>
+      <div class="card-meta"><b>${n.source}</b>${badgeFor(n)} · ${n.date}</div>
       <div class="card-summary">${n.summary}</div>
+      ${isLikelyPaywalled(n) ? `
+      <div class="paywall-notice">
+        <i class="paywall-icon">&#128274;</i> Esta fuente suele requerir suscripción — el texto puede estar incompleto.
+        <a href="#" data-complete-id="${n.id}">¿Tienes acceso? Pega el texto completo &rarr;</a>
+      </div>` : ''}
       <div class="card-bottom">
         <label class="card-select">
           <input type="checkbox" data-id="${n.id}" ${selected.has(String(n.id))?'checked':''}> Incluir
         </label>
-        <a class="card-link" href="${n.url}" target="_blank" rel="noopener">Leer fuente &rarr;</a>
+        ${n.origin==='manual'
+          ? `<a class="remove-link" href="#" data-remove-id="${n.id}">Eliminar</a>`
+          : `<a class="card-link" href="${n.url}" target="_blank" rel="noopener">Leer fuente &rarr;</a>`}
       </div>
     </div>
   `).join('');
@@ -400,6 +542,26 @@ function render(){
       const id = e.target.dataset.id;
       if(e.target.checked) selected.add(id); else selected.delete(id);
       updateExportBar();
+    });
+  });
+
+  grid.querySelectorAll('[data-complete-id]').forEach(link=>{
+    link.addEventListener('click', e=>{
+      e.preventDefault();
+      openCompletionForm(link.dataset.completeId);
+    });
+  });
+
+  grid.querySelectorAll('[data-remove-id]').forEach(link=>{
+    link.addEventListener('click', e=>{
+      e.preventDefault();
+      const id = link.dataset.removeId;
+      MANUAL_NEWS = MANUAL_NEWS.filter(n=>n.id!==id);
+      saveManualNews();
+      NEWS = NEWS.filter(n=>n.id!==id);
+      selected.delete(id);
+      updateExportBar();
+      render();
     });
   });
 }
@@ -413,6 +575,126 @@ document.getElementById('filters').addEventListener('click', e=>{
   currentFilter = btn.dataset.filter;
   render();
 });
+
+const manualForm = document.getElementById('manualForm');
+
+function openAddForm(){
+  completingItemId = null;
+  document.getElementById('manualFormTitle').textContent = 'Agregar noticia de pago (pegar texto completo)';
+  document.getElementById('manualFormHint').textContent = 'Para noticias detrás de un muro de pago de tus suscripciones que el panel no detectó: copia el texto del artículo y pégalo aquí.';
+  document.getElementById('mSubmit').textContent = 'Agregar noticia';
+  document.getElementById('mTitle').value = '';
+  document.getElementById('mSource').value = '';
+  document.getElementById('mText').value = '';
+  document.getElementById('mUrl').value = '';
+  document.getElementById('mCat').value = 'auto';
+  document.getElementById('mTitle').disabled = false;
+  document.getElementById('mSource').disabled = false;
+  document.getElementById('mDate').valueAsDate = new Date();
+  document.getElementById('manualError').textContent = '';
+  manualForm.classList.add('open');
+  document.getElementById('mTitle').focus();
+  manualForm.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function openCompletionForm(id){
+  const item = NEWS.find(n => String(n.id) === String(id));
+  if(!item) return;
+  completingItemId = id;
+  document.getElementById('manualFormTitle').textContent = 'Completar texto de esta noticia';
+  document.getElementById('manualFormHint').textContent = `Estás completando: "${item.title}". Pega el texto completo del artículo — el resumen ejecutivo usará este texto en vez del fragmento corto.`;
+  document.getElementById('mSubmit').textContent = 'Guardar texto completo';
+  document.getElementById('mTitle').value = item.title;
+  document.getElementById('mSource').value = item.source;
+  document.getElementById('mText').value = item.fullText || '';
+  document.getElementById('mUrl').value = (item.url && item.url !== '#') ? item.url : '';
+  document.getElementById('mCat').value = item.cat;
+  document.getElementById('mTitle').disabled = true;
+  document.getElementById('mSource').disabled = true;
+  document.getElementById('manualError').textContent = '';
+  manualForm.classList.add('open');
+  document.getElementById('mText').focus();
+  manualForm.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+document.getElementById('addManualBtn').addEventListener('click', ()=>{
+  if(manualForm.classList.contains('open') && completingItemId===null){
+    manualForm.classList.remove('open');
+  } else {
+    openAddForm();
+  }
+});
+document.getElementById('mCancel').addEventListener('click', ()=>{
+  manualForm.classList.remove('open');
+  completingItemId = null;
+  document.getElementById('manualError').textContent = '';
+});
+
+document.getElementById('mSubmit').addEventListener('click', ()=>{
+  const title = document.getElementById('mTitle').value.trim();
+  const source = document.getElementById('mSource').value.trim();
+  const text = document.getElementById('mText').value.trim();
+  const urlVal = document.getElementById('mUrl').value.trim();
+  const dateVal = document.getElementById('mDate').value;
+  const catVal = document.getElementById('mCat').value;
+  const errorEl = document.getElementById('manualError');
+
+  if(!title || !source || !text){
+    errorEl.textContent = 'Completa título, fuente y el texto de la noticia antes de continuar.';
+    return;
+  }
+  errorEl.textContent = '';
+
+  if(completingItemId !== null){
+    // Modo completar: guardamos el texto ligado a la URL de esa noticia,
+    // asi sobrevive a la proxima actualizacion en vivo.
+    const item = NEWS.find(n => String(n.id) === String(completingItemId));
+    if(item && item.url && item.url !== '#'){
+      COMPLETIONS[item.url] = {fullText: text, completedAt: Date.now()};
+      saveCompletions();
+    }
+    NEWS = NEWS.map(n => String(n.id) === String(completingItemId)
+      ? {...n, fullText: text, summary: truncate(text, 220), completed: true}
+      : n);
+    completingItemId = null;
+    manualForm.classList.remove('open');
+    document.getElementById('mTitle').disabled = false;
+    document.getElementById('mSource').disabled = false;
+    render();
+    return;
+  }
+
+  const cat = catVal==='auto' ? categorize(title + ' ' + text) : catVal;
+  const displayDate = dateVal
+    ? new Date(dateVal + 'T12:00:00').toLocaleDateString('es-CR', {day:'numeric', month:'short', year:'numeric'})
+    : new Date().toLocaleDateString('es-CR', {day:'numeric', month:'short', year:'numeric'});
+
+  const newItem = {
+    id: 'manual-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,7),
+    cat,
+    title,
+    source,
+    date: displayDate,
+    summary: truncate(text, 220),
+    fullText: text,
+    url: urlVal || '#',
+    origin: 'manual'
+  };
+
+  MANUAL_NEWS.unshift(newItem);
+  saveManualNews();
+  NEWS = [newItem, ...NEWS];
+
+  document.getElementById('mTitle').value = '';
+  document.getElementById('mSource').value = '';
+  document.getElementById('mText').value = '';
+  document.getElementById('mUrl').value = '';
+  document.getElementById('mCat').value = 'auto';
+  manualForm.classList.remove('open');
+
+  render();
+});
+
 
 const FEEDS = [
   {label:'El Financiero CR', query:'site:elfinancierocr.com (inmobiliario OR construcción OR vivienda OR "bienes raíces")'},
@@ -471,12 +753,12 @@ async function fetchLive(){
 
   dot.classList.remove('pulsing');
   if(liveItems.length > 0){
-    NEWS = liveItems;
+    NEWS = applyCompletions([...MANUAL_NEWS, ...liveItems]);
     dot.classList.add('on');
     const now = new Date().toLocaleTimeString('es-CR', {hour:'2-digit', minute:'2-digit'});
     text.textContent = `En vivo · ${liveItems.length} noticias · ${ok.length}/${FEEDS.length} fuentes respondieron · actualizado ${now}`;
   } else {
-    NEWS = SEED_NEWS.map(n => ({...n, origin:'seed'}));
+    NEWS = applyCompletions([...MANUAL_NEWS, ...SEED_NEWS.map(n => ({...n, origin:'seed'}))]);
     dot.classList.remove('on');
     text.textContent = 'No se pudo conectar con las fuentes en vivo — mostrando el resumen curado como respaldo.';
   }
@@ -513,20 +795,76 @@ function buildSummaryText(){
   return out;
 }
 
-function buildSummaryDocumentHTML(){
+function buildFallbackDocumentHTML(){
   const items = NEWS.filter(n=>selected.has(String(n.id)));
   const fecha = new Date().toLocaleDateString('es-CR', {day:'numeric', month:'long', year:'numeric'});
   const logoSrc = document.querySelector('.chevmark').src;
   const fuentesUnicas = [...new Set(items.map(n=>n.source))].join(' · ');
 
-  const sections = items.map((n,i)=>`
+  const sections = items.map((n,i)=>{
+    const bodyText = n.fullText ? n.fullText : n.summary;
+    const paragraphs = bodyText.split(/\n{1,}/).filter(p=>p.trim()).map(p=>`<p class="body-text">${p.trim()}</p>`).join('\n');
+    const linkLine = (n.url && n.url !== '#')
+      ? `<p class="link"><a href="${n.url}">Ver noticia original &rarr;</a></p>`
+      : `<p class="link" style="color:#999;">Texto pegado manualmente (sin enlace público)</p>`;
+    return `
     <div class="art">
       <h3>${i+1}. ${n.title}</h3>
       <p class="meta">${CAT_LABEL[n.cat]} &nbsp;·&nbsp; <b>${n.source}</b> &nbsp;·&nbsp; ${n.date}</p>
-      <p class="body-text">${n.summary}</p>
-      <p class="link"><a href="${n.url}">Ver noticia original &rarr;</a></p>
-    </div>`).join('\n<hr class="sep">\n');
+      ${paragraphs}
+      ${linkLine}
+    </div>`;
+  }).join('\n<hr class="sep">\n');
 
+  return wrapReportHTML({
+    fecha, fuentesUnicas, logoSrc,
+    body: sections || '<p class="body-text">No hay noticias seleccionadas.</p>',
+    warning: '<p style="background:#fff3ea;border:1px solid #e8c9a0;color:#7a4a12;font-size:12px;padding:10px 14px;margin:0 0 24px;">No se pudo generar el análisis con IA en este momento — se muestra el listado sin sintetizar. Revisa la conexión con la API o inténtalo de nuevo.</p>'
+  });
+}
+
+function buildAIReportHTML(aiData, items){
+  const fecha = new Date().toLocaleDateString('es-CR', {day:'numeric', month:'long', year:'numeric'});
+  const logoSrc = document.querySelector('.chevmark').src;
+  const fuentesUnicas = [...new Set(items.map(n=>n.source))].join(' · ');
+
+  const cifrasTable = (aiData.cifras && aiData.cifras.length > 0) ? `
+    <h2>Principales cifras</h2>
+    <table class="cifras-table">
+      <thead><tr><th>Indicador</th><th>Valor</th><th>Nota</th></tr></thead>
+      <tbody>
+        ${aiData.cifras.map(c => `<tr><td><b>${c.etiqueta}</b></td><td>${c.valor}</td><td>${c.nota||''}</td></tr>`).join('')}
+      </tbody>
+    </table>` : '';
+
+  const tendenciasList = (aiData.tendencias && aiData.tendencias.length > 0) ? `
+    <h2>Tendencias identificadas</h2>
+    <ul class="report-list">${aiData.tendencias.map(t=>`<li>${t}</li>`).join('')}</ul>` : '';
+
+  const implicacionesList = (aiData.implicaciones && aiData.implicaciones.length > 0) ? `
+    <h2>Implicaciones para Grupo Zen</h2>
+    <ul class="report-list">${aiData.implicaciones.map(t=>`<li>${t}</li>`).join('')}</ul>` : '';
+
+  const fuentesConsideradas = items.map((n,i)=>`
+    <div class="src-item">
+      <span class="src-num">${i+1}.</span> <b>${n.title}</b> — <i>${n.source}, ${n.date}</i>
+      ${(n.url && n.url!=='#') ? ` — <a href="${n.url}">Ver original</a>` : ''}
+    </div>`).join('');
+
+  const body = `
+    <h2>Hallazgo principal</h2>
+    <p class="body-text">${aiData.hallazgoPrincipal || 'No disponible.'}</p>
+    ${cifrasTable}
+    ${tendenciasList}
+    ${implicacionesList}
+    <h2>Noticias consideradas</h2>
+    <div class="src-list">${fuentesConsideradas}</div>
+  `;
+
+  return wrapReportHTML({fecha, fuentesUnicas, logoSrc, body, warning: ''});
+}
+
+function wrapReportHTML({fecha, fuentesUnicas, logoSrc, body, warning}){
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -555,10 +893,20 @@ function buildSummaryDocumentHTML(){
   .source-line{ text-align:center; font-size:11px; color:#777; font-style:italic; margin:0 0 24px; }
   hr.top{ border:none; border-top:1px solid #ccc; margin:0 0 28px; }
   hr.sep{ border:none; border-top:1px solid #ddd; margin:22px 0; }
+  h2{ font-size:15px; margin:26px 0 10px; text-transform:uppercase; letter-spacing:.04em; color:#333; border-bottom:1px solid #ddd; padding-bottom:4px; }
   h3{ font-size:16px; margin:0 0 6px; }
   .meta{ font-size:11.5px; color:#666; font-style:italic; margin:0 0 10px; }
   .body-text{ font-size:14px; text-align:justify; margin:0 0 8px; }
   .link a{ font-size:11.5px; color:#8a7440; word-break:break-all; }
+  .report-list{ margin:0; padding-left:20px; font-size:13.5px; }
+  .report-list li{ margin-bottom:6px; }
+  .cifras-table{ width:100%; border-collapse:collapse; font-size:13px; margin-bottom:6px; }
+  .cifras-table th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:#666; border-bottom:1px solid #999; padding:6px 8px; }
+  .cifras-table td{ padding:7px 8px; border-bottom:1px solid #eee; vertical-align:top; }
+  .src-list{ font-size:12px; color:#444; }
+  .src-item{ margin-bottom:8px; line-height:1.5; }
+  .src-num{ color:#999; }
+  .src-item a{ color:#8a7440; }
   .footer{ margin-top:40px; padding-top:14px; border-top:1px solid #ccc; font-size:11px; color:#777; font-style:italic; text-align:center; }
 </style>
 </head>
@@ -574,16 +922,36 @@ function buildSummaryDocumentHTML(){
   <p class="source-line">Fuentes: ${fuentesUnicas || 'N/D'}</p>
   <hr class="top">
 
-  ${sections || '<p class="body-text">No hay noticias seleccionadas.</p>'}
+  ${warning || ''}
+  ${body}
 
-  <p class="footer">Elaborado a partir de coberturas periodísticas públicas. Verifique cifras oficiales en BCCR, INEC y CFIA antes de usarlas en documentos formales. — Grupo Zen, Radar Inmobiliario Costa Rica.</p>
+  <p class="footer">Elaborado a partir de coberturas periodísticas públicas y sintetizado con IA. Verifique cifras oficiales en BCCR, INEC y CFIA antes de usarlas en documentos formales. — Grupo Zen, Radar Inmobiliario Costa Rica.</p>
 </body>
 </html>`;
 }
 
-document.getElementById('exportBtn').addEventListener('click', ()=>{
-  if(selected.size===0) return;
-  const html = buildSummaryDocumentHTML();
+async function callSummarizeAPI(items){
+  const articles = items.map(n => ({
+    title: n.title,
+    source: n.source,
+    date: n.date,
+    text: n.fullText || n.summary
+  }));
+
+  const res = await fetch('/api/summarize', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({articles})
+  });
+
+  if(!res.ok){
+    const errBody = await res.json().catch(()=>({}));
+    throw new Error(errBody.error || `Error HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+function downloadHtmlDoc(html){
   const blob = new Blob([html], {type:'text/html;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -593,6 +961,28 @@ document.getElementById('exportBtn').addEventListener('click', ()=>{
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+document.getElementById('exportBtn').addEventListener('click', async ()=>{
+  if(selected.size===0) return;
+  const items = NEWS.filter(n=>selected.has(String(n.id)));
+  const btn = document.getElementById('exportBtn');
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Analizando con IA…';
+
+  try{
+    const aiData = await callSummarizeAPI(items);
+    const html = buildAIReportHTML(aiData, items);
+    downloadHtmlDoc(html);
+  }catch(err){
+    console.error('Fallo el resumen con IA:', err);
+    const html = buildFallbackDocumentHTML();
+    downloadHtmlDoc(html);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
 });
 
 document.getElementById('copyBtn').addEventListener('click', async ()=>{
