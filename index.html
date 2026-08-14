@@ -79,6 +79,9 @@
   .paywall-notice .paywall-icon{font-style:normal; margin-right:2px;}
   .paywall-notice a{color:#c8a24d; font-weight:600; text-decoration:none; display:inline-block; margin-top:2px;}
   .paywall-notice a:hover{text-decoration:underline;}
+  .paywall-notice-done{color:#a8cf8a; background:#182016; border-color:#2f4326;}
+  .paywall-notice-done a{color:#8fcf83;}
+  .paywall-notice-done a.clear-link{color:#cf8a8a;}
   .manual-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:16px;}
   .manual-tag{background:#20242c; color:#c9a97a;}
   .filters{display:flex;gap:8px;flex-wrap:wrap;margin:28px 0 24px;}
@@ -521,11 +524,17 @@ function render(){
       <div class="card-title">${n.title}</div>
       <div class="card-meta"><b>${n.source}</b>${badgeFor(n)} · ${n.date}</div>
       <div class="card-summary">${n.summary}</div>
-      ${isLikelyPaywalled(n) ? `
+      ${n.completed ? `
+      <div class="paywall-notice paywall-notice-done">
+        <i class="paywall-icon">&#10003;</i> Texto completo agregado a esta noticia.
+        <a href="#" data-complete-id="${n.id}">Editar texto</a>
+        &nbsp;·&nbsp;
+        <a href="#" data-clear-id="${n.id}" class="clear-link">Quitar</a>
+      </div>` : (isLikelyPaywalled(n) ? `
       <div class="paywall-notice">
         <i class="paywall-icon">&#128274;</i> Esta fuente suele requerir suscripción — el texto puede estar incompleto.
         <a href="#" data-complete-id="${n.id}">¿Tienes acceso? Pega el texto completo &rarr;</a>
-      </div>` : ''}
+      </div>` : '')}
       <div class="card-bottom">
         <label class="card-select">
           <input type="checkbox" data-id="${n.id}" ${selected.has(String(n.id))?'checked':''}> Incluir
@@ -549,6 +558,21 @@ function render(){
     link.addEventListener('click', e=>{
       e.preventDefault();
       openCompletionForm(link.dataset.completeId);
+    });
+  });
+
+  grid.querySelectorAll('[data-clear-id]').forEach(link=>{
+    link.addEventListener('click', e=>{
+      e.preventDefault();
+      const id = link.dataset.clearId;
+      const item = NEWS.find(n => String(n.id) === String(id));
+      if(item && item.url && COMPLETIONS[item.url]){
+        delete COMPLETIONS[item.url];
+        saveCompletions();
+      }
+      selected.delete(id);
+      updateExportBar();
+      fetchLive();
     });
   });
 
