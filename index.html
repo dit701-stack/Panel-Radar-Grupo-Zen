@@ -337,6 +337,21 @@ function categorize(text){
   return 'mercado';
 }
 
+const REAL_ESTATE_KEYWORDS = [
+  'inmobiliari','vivienda','bienes raíces','bienes raices','construcción','construccion',
+  'apartamento','condominio','alquiler','arrendamiento','hipoteca','hipotecario',
+  'terreno','urbaniza','residencial','oficinas','desarrollador','proyecto habitacional',
+  'plan regulador','zona franca','metro cuadrado','m²','catastro','finca raíz','finca raiz',
+  'propiedad','edificio','torre','cfia','invu','visado','crédito de vivienda','credito de vivienda',
+  'tasa hipotecaria','fraccionamiento','lote','casa','constructora','obra gris','permiso de construcción',
+  'plusvalía','plusvalia','alquileres','arrendatario','proptech','bróker inmobiliario','broker inmobiliario'
+];
+
+function isRealEstateRelevant(text){
+  const t = text.toLowerCase();
+  return REAL_ESTATE_KEYWORDS.some(k => t.includes(k));
+}
+
 function extractSource(title, fallback){
   const parts = title.split(' - ');
   if(parts.length > 1) return parts[parts.length-1].trim();
@@ -393,7 +408,7 @@ document.getElementById('filters').addEventListener('click', e=>{
 
 const FEEDS = [
   {label:'El Financiero CR', query:'site:elfinancierocr.com (inmobiliario OR construcción OR vivienda OR "bienes raíces")'},
-  {label:'La Nación CR', query:'site:nacion.com (inmobiliario OR construcción OR vivienda) economía'},
+  {label:'La Nación CR', query:'site:nacion.com (inmobiliario OR "bienes raíces" OR vivienda OR construcción OR "plan regulador")'},
   {label:'Mercado inmobiliario CR', query:'"mercado inmobiliario" Costa Rica'},
   {label:'Finanzas y tasas CR', query:'Costa Rica (BCCR OR "tasa de interés" OR hipoteca OR crédito vivienda)'},
   {label:'Regulación y construcción CR', query:'Costa Rica (CFIA OR "plan regulador" OR INVU OR "zona franca") construcción'}
@@ -441,6 +456,9 @@ async function fetchLive(){
     seen.add(it.url);
     return true;
   });
+
+  liveItems = liveItems.filter(it => isRealEstateRelevant(it.title + ' ' + it.summary));
+
   liveItems.sort((a,b) => new Date(b.rawDate||0) - new Date(a.rawDate||0));
 
   dot.classList.remove('pulsing');
