@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grupo Zen — Radar Inmobiliario CR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --zen-black:#0a0a0a;
+    --zen-panel:#141414;
+    --zen-line:#2a2a2a;
+    --zen-white:#f7f6f2;
+    --zen-white-dim:#c9c7c0;
+    --zen-gold:#c8a24d;
+    --zen-gold-dim:#8a7440;
+    --zen-up:#7fae6a;
+    --zen-flat:#9c9c94;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--zen-black);
+    color:var(--zen-white);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:90px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px;}
+
+  /* header */
+  header{border-bottom:1px solid var(--zen-line);padding:36px 0 28px;}
+  .brand-row{display:flex;align-items:center;gap:16px;}
+  .chevmark{width:40px;height:40px;flex:none;}
+  .brand-title{font-family:'Archivo',sans-serif;font-weight:900;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--zen-white);}
+  .brand-sub{font-size:11px;letter-spacing:.1em;color:var(--zen-white-dim);text-transform:uppercase;margin-top:2px;}
+  h1{font-family:'Archivo',sans-serif;font-weight:900;font-size:clamp(28px,4vw,44px);line-height:1.05;letter-spacing:-.01em;margin:22px 0 8px;text-transform:uppercase;}
+  h1 span{color:var(--zen-gold);}
+  .updated{font-size:13px;color:var(--zen-white-dim);margin-bottom:24px;}
+
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--zen-line);border:1px solid var(--zen-line);}
+  .metric{background:var(--zen-black);padding:16px 18px;}
+  .metric-val{font-family:'Archivo',sans-serif;font-weight:700;font-size:22px;color:var(--zen-gold);}
+  .metric-label{font-size:11px;color:var(--zen-white-dim);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;}
+
+  /* filters */
+  .livebar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:22px;padding:12px 16px;background:var(--zen-panel);border:1px solid var(--zen-line);}
+  .live-status{font-size:12px;color:var(--zen-white-dim);display:flex;align-items:center;gap:8px;}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:var(--zen-flat);flex:none;}
+  .live-dot.on{background:var(--zen-up);}
+  .live-dot.pulsing{animation:pulse 1.1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+  .refresh-btn{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;background:transparent;border:1px solid var(--zen-gold);color:var(--zen-gold);padding:8px 14px;border-radius:2px;cursor:pointer;}
+  .refresh-btn:disabled{opacity:.4;cursor:default;}
+  .live-badge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:#1e2a20;color:#8fcf83;padding:2px 6px;border-radius:2px;margin-left:6px;}
+  .fallback-badge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:#2a2620;color:#d8b96a;padding:2px 6px;border-radius:2px;margin-left:6px;}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin:28px 0 24px;}
+  .filter-btn{
+    font-family:'Inter',sans-serif;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+    background:transparent;border:1px solid var(--zen-line);color:var(--zen-white-dim);
+    padding:9px 16px;border-radius:2px;cursor:pointer;transition:.15s;
+  }
+  .filter-btn:hover{border-color:var(--zen-gold-dim);color:var(--zen-white);}
+  .filter-btn.active{background:var(--zen-gold);border-color:var(--zen-gold);color:var(--zen-black);}
+
+  /* grid */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--zen-line);border:1px solid var(--zen-line);}
+  @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:640px){.grid{grid-template-columns:1fr;} .metrics{grid-template-columns:repeat(2,1fr);}}
+
+  .card{background:var(--zen-black);padding:20px 20px 18px;display:flex;flex-direction:column;gap:10px;transition:background .15s;}
+  .card:hover{background:var(--zen-panel);}
+  .card.hidden{display:none;}
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .tag{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;padding:4px 8px;border-radius:2px;white-space:nowrap;}
+  .tag-mercado{background:#2a2a20;color:#d8c98a;}
+  .tag-zonas{background:#1f2620;color:#a8caa0;}
+  .tag-financiero{background:#20242c;color:#9fb6da;}
+  .tag-regulatorio{background:#2c2020;color:#d9a8a0;}
+  .tag-segmentos{background:#2a1f2a;color:#cfa8cf;}
+  .trend{font-size:15px;line-height:1;color:var(--zen-up);}
+  .trend.flat{color:var(--zen-flat);}
+
+  .card-title{font-family:'Archivo',sans-serif;font-weight:700;font-size:16px;line-height:1.28;color:var(--zen-white);}
+  .card-meta{font-size:11.5px;color:var(--zen-white-dim);}
+  .card-meta b{color:var(--zen-white);font-weight:600;}
+  .card-summary{font-size:13.5px;line-height:1.55;color:#d9d8d2;flex:1;}
+  .card-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:6px;padding-top:12px;border-top:1px solid var(--zen-line);}
+  .card-select{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--zen-white-dim);cursor:pointer;user-select:none;}
+  .card-select input{accent-color:var(--zen-gold);width:14px;height:14px;cursor:pointer;}
+  .card-link{font-size:12px;color:var(--zen-gold);text-decoration:none;font-weight:600;white-space:nowrap;}
+  .card-link:hover{text-decoration:underline;}
+
+  /* export bar */
+  .exportbar{
+    position:sticky;bottom:0;left:0;right:0;
+    background:var(--zen-panel);border-top:1px solid var(--zen-gold-dim);
+    padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+    margin-top:0;
+  }
+  .exportbar .wrap{width:100%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  .exp-count{font-size:13px;color:var(--zen-white-dim);}
+  .exp-count b{color:var(--zen-gold);font-family:'Archivo',sans-serif;}
+  .exp-actions{display:flex;gap:10px;}
+  .exp-btn{
+    font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;letter-spacing:.03em;text-transform:uppercase;
+    padding:11px 18px;border-radius:2px;cursor:pointer;border:1px solid var(--zen-gold);
+  }
+  .exp-btn.primary{background:var(--zen-gold);color:var(--zen-black);}
+  .exp-btn.primary:disabled{opacity:.35;cursor:not-allowed;}
+  .exp-btn.secondary{background:transparent;color:var(--zen-gold);}
+  .exp-btn.secondary:disabled{opacity:.35;cursor:not-allowed;border-color:var(--zen-line);color:var(--zen-white-dim);}
+
+  /* footer / sources */
+  footer{margin-top:48px;padding:32px 0 60px;border-top:1px solid var(--zen-line);}
+  footer h2{font-family:'Archivo',sans-serif;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--zen-gold);margin-bottom:14px;}
+  .src-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px 32px;margin-bottom:30px;}
+  @media(max-width:700px){.src-grid{grid-template-columns:1fr 1fr;}}
+  .src-item{font-size:13px;color:var(--zen-white-dim);}
+  .src-item b{color:var(--zen-white);display:block;font-size:13.5px;margin-bottom:2px;}
+  .disclaimer{font-size:11.5px;color:#6f6e68;line-height:1.6;max-width:760px;}
+
+  .toast{position:fixed;bottom:88px;right:24px;background:var(--zen-gold);color:var(--zen-black);font-size:13px;font-weight:600;padding:11px 18px;border-radius:2px;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none;z-index:50;}
+  .toast.show{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="brand-row">
+      <svg class="chevmark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="50,18 78,40 78,52 50,30 22,52 22,40" fill="#f7f6f2"/>
+        <polygon points="50,42 78,64 78,76 50,54 22,76 22,64" fill="#c8a24d"/>
+      </svg>
+      <div>
+        <div class="brand-title">Grupo Zen</div>
+        <div class="brand-sub">Desarrolladora inmobiliaria</div>
+      </div>
+    </div>
+    <h1>Radar <span>Inmobiliario</span> Costa Rica</h1>
+    <div class="updated">Curado para Mercadeo · Actualizado 14 de agosto, 2026 · Fuentes: El Financiero, La Nación y medios especializados</div>
+
+    <div class="metrics">
+      <div class="metric"><div class="metric-val">3,25%</div><div class="metric-label">Tasa política monetaria (BCCR)</div></div>
+      <div class="metric"><div class="metric-val">+64.662</div><div class="metric-label">Viviendas nuevas ocupadas 2025</div></div>
+      <div class="metric"><div class="metric-val">+21%</div><div class="metric-label">Intención de construcción (CFIA, I sem. 2026)</div></div>
+      <div class="metric"><div class="metric-val">7–11%</div><div class="metric-label">Tasas hipotecarias vigentes</div></div>
+    </div>
+  </header>
+
+  <div class="livebar">
+    <div class="live-status">
+      <span class="live-dot pulsing" id="liveDot"></span>
+      <span id="liveText">Conectando con fuentes en vivo…</span>
+    </div>
+    <button class="refresh-btn" id="refreshBtn">Actualizar ahora</button>
+  </div>
+
+  <div class="filters" id="filters">
+    <button class="filter-btn active" data-filter="todas">Todas</button>
+    <button class="filter-btn" data-filter="mercado">Mercado</button>
+    <button class="filter-btn" data-filter="zonas">Zonas de desarrollo</button>
+    <button class="filter-btn" data-filter="segmentos">Segmentos</button>
+    <button class="filter-btn" data-filter="financiero">Financiero</button>
+    <button class="filter-btn" data-filter="regulatorio">Político y regulatorio</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    <h2>Fuentes usadas en este panel</h2>
+    <div class="src-grid">
+      <div class="src-item"><b>El Financiero</b>Cobertura de negocios, desarrollo y proyectos inmobiliarios.</div>
+      <div class="src-item"><b>La Nación</b>Sección Economía: vivienda, construcción e indicadores del sector.</div>
+      <div class="src-item"><b>Delfino.cr</b>Política monetaria, BCCR y análisis económico.</div>
+      <div class="src-item"><b>Semanario Universidad / La República</b>Tasas de interés y regulación financiera.</div>
+      <div class="src-item"><b>Infobae Costa Rica</b>Estadísticas de construcción y permisos.</div>
+      <div class="src-item"><b>El Mundo.cr</b>Análisis y propuestas de política de vivienda.</div>
+    </div>
+    <h2>Fuentes recomendadas para ampliar el monitoreo</h2>
+    <div class="src-grid">
+      <div class="src-item"><b>BCCR — Banco Central</b>Tasa de política monetaria, inflación e indicadores oficiales. bccr.fi.cr</div>
+      <div class="src-item"><b>INEC — Enaho</b>Encuesta Nacional de Hogares, base de los estudios de tenencia de vivienda.</div>
+      <div class="src-item"><b>CFIA</b>Estadísticas oficiales de metros cuadrados de construcción visados por cantón.</div>
+      <div class="src-item"><b>Cámara Costarricense de la Construcción (CCC)</b>Índices sectoriales y coyuntura de la construcción.</div>
+      <div class="src-item"><b>INVU</b>Planes reguladores, reglamentos de fraccionamiento y urbanismo.</div>
+      <div class="src-item"><b>PROCOMER</b>Inversión extranjera directa y zonas francas.</div>
+      <div class="src-item"><b>Estado de la Nación (PEN)</b>Análisis independiente de vivienda y desarrollo urbano.</div>
+      <div class="src-item"><b>Cushman & Wakefield / Gensler / CBRE CR</b>Reportes de mercado oficina, industrial, retail y tendencias de diseño.</div>
+    </div>
+    <div class="disclaimer">Los resúmenes de este panel son elaborados a partir de coberturas periodísticas y reportes públicos; no sustituyen la lectura de la fuente original, cuyo enlace se incluye en cada tarjeta. Verifique cifras oficiales directamente en BCCR, INEC y CFIA antes de usarlas en documentos formales.</div>
+  </footer>
+</div>
+
+<div class="exportbar">
+  <div class="wrap">
+    <div class="exp-count"><b id="selCount">0</b> noticias seleccionadas para el resumen ejecutivo</div>
+    <div class="exp-actions">
+      <button class="exp-btn secondary" id="copyBtn" disabled>Copiar resumen</button>
+      <button class="exp-btn primary" id="exportBtn" disabled>Exportar resumen ejecutivo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Copiado al portapapeles</div>
+
+<script>
+const SEED_NEWS = [
+  {
+    id:1, cat:'mercado', trend:'up',
+    title:'El parque habitacional creció al doble de ritmo en 2025',
+    source:'La Nación', date:'13 ago 2026',
+    summary:'Costa Rica sumó 64.662 viviendas ocupadas en 2025, el doble que en 2024, hasta llegar a 1.873.372 unidades. El crecimiento lo explican sobre todo la vivienda totalmente pagada (autoconstrucción en lotes familiares) y el alquiler, que subió más de 21.000 unidades en un año.',
+    url:'https://www.nacion.com/economia/mercado-de-vivienda-en-costa-rica-crecio-en-2025/YR5J7OVFVNE3NHHB3W26B4Z4TI/story/'
+  },
+  {
+    id:2, cat:'mercado', trend:'flat',
+    title:'El mercado residencial se aleja del alcance de la clase media',
+    source:'El Financiero', date:'31 mar 2026',
+    summary:'Un análisis basado en el Anuario de la Vivienda 2025 de la CAF advierte una desconexión estructural entre lo que construyen los desarrolladores y la capacidad financiera real de la mayoría de los hogares costarricenses.',
+    url:'https://www.elfinancierocr.com/economia-y-politica/el-mercado-inmobiliario-de-costa-rica-le-da-la/5NEUMFKIAFHO3CZ455QDJ42QRY/story/'
+  },
+  {
+    id:3, cat:'zonas', trend:'up',
+    title:'2026 será el año de mayor inversión en tres décadas para Portafolio Inmobiliario',
+    source:'El Financiero', date:'5 mar 2026',
+    summary:'La desarrolladora proyecta cerca de $150 millones en inversión, más del doble de su promedio anual, enfocada en proyectos de uso mixto caminables que combinan vivienda, comercio y oficinas. También destaca Costa Rica Green Valley en Grecia como parque industrial de nueva generación.',
+    url:'https://www.elfinancierocr.com/negocios/los-proyectos-inmobiliarios-mas-grandes-de-este/S26FB2JCN5BTTKS3FFAHCSRUCY/story/'
+  },
+  {
+    id:4, cat:'financiero', trend:'up',
+    title:'La intención de construcción crece 21% ante el CFIA',
+    source:'La Nación', date:'25 jul 2026',
+    summary:'En el primer semestre de 2026 se registraron 5,78 millones de m² de intención de construcción, frente a 4,78 millones un año antes. Limón lidera el crecimiento con +72,4%, seguido de Heredia (+52,1%) y Puntarenas (+47,1%), señal de que el dinamismo se está descentralizando del Valle Central.',
+    url:'https://www.nacion.com/economia/construccion-en-costa-rica-registra-un-dinamismo/FIWZXCWVO5G7PM5D6VK565SNFM/story/'
+  },
+  {
+    id:5, cat:'financiero', trend:'up',
+    title:'La construcción cerró 2025 con 7,7% más obras',
+    source:'Infobae Costa Rica', date:'26 mar 2026',
+    summary:'El país superó las 44 mil obras en 2025. Las viviendas de 100 a 150 m² fueron las que más crecieron, mientras que las unidades pequeñas (40 a 70 m²) siguen siendo las más frecuentes, lideradas por Alajuela.',
+    url:'https://www.infobae.com/costa-rica/2026/03/26/construccion-en-costa-rica-crece-77-en-2025-y-supera-las-44-mil-obras/'
+  },
+  {
+    id:6, cat:'financiero', trend:'flat',
+    title:'El Banco Central mantiene la tasa de referencia en 3,25%',
+    source:'Delfino.cr', date:'27 mar 2026',
+    summary:'La Junta Directiva del BCCR sostuvo la Tasa de Política Monetaria por segundo mes consecutivo, citando mayor incertidumbre internacional y un repunte en las expectativas de inflación. Esta tasa es la referencia que determina el corredor de crédito y depósitos del sistema financiero.',
+    url:'https://delfino.cr/2026/03/bccr-mantiene-tasa-de-politica-monetaria-en-325-ante-incertidumbre-internacional'
+  },
+  {
+    id:7, cat:'financiero', trend:'down',
+    title:'Baja el techo legal de las tasas de interés para el primer semestre',
+    source:'La República / Semanario Universidad', date:'6 ene 2026',
+    summary:'El BCCR fijó el nuevo tope de interés en 36,27% anual en colones y 30,39% en dólares para créditos generales, una leve rebaja frente al semestre anterior. Economistas advierten que la fuerte dispersión de tasas activas refleja un mercado de crédito poco profundo y competitivo.',
+    url:'https://www.larepublica.net/noticia/banco-central-fija-topes-a-tasas-de-interes-para-2026-conozca-los-limites-en-colones-y-dolares'
+  },
+  {
+    id:8, cat:'regulatorio', trend:'flat',
+    title:'INVU actualiza el reglamento de fraccionamiento y urbanizaciones',
+    source:'INVU', date:'2026',
+    summary:'El Instituto Nacional de Vivienda y Urbanismo publicó una versión ilustrada del reglamento que rige los fraccionamientos y urbanizaciones, junto con una guía para integrar gestión de riesgo climático en los planes reguladores cantonales, insumo directo para el diseño de nuevos proyectos.',
+    url:'https://www.invu.go.cr/leyes-y-reglamentos'
+  },
+  {
+    id:9, cat:'regulatorio', trend:'flat',
+    title:'Cuatro propuestas para destrabar el déficit habitacional',
+    source:'El Mundo.cr', date:'1 jun 2026',
+    summary:'Un análisis de coyuntura documenta una caída de 5,3% en viviendas aprobadas frente a 2023 y un déficit habitacional del CFIA superior a 150.000 viviendas. Entre las propuestas destaca permitir la segregación registral de segundos pisos para desbloquear suelo urbano ya construido pero no escriturado.',
+    url:'https://elmundo.cr/opinion/construir-el-futuro-cuatro-propuestas-para-reactivar-el-sector-construccion-y-el-acceso-a-la-vivienda-en-costa-rica/'
+  },
+  {
+    id:10, cat:'zonas', trend:'up',
+    title:'Heredia, Guanacaste y los cantones del oeste concentran los nuevos polos residenciales',
+    source:'INHAUS Costa Rica', date:'16 ene 2026',
+    summary:'Las zonas francas de Heredia (Belén, Flores, Santo Domingo) generan demanda de apartamentos para profesionales jóvenes. Guanacaste sigue atrayendo comunidades de residentes permanentes en Coco, Flamingo y Papagayo, mientras Mora, Poás y Oreamuno emergen como alternativas de menor precio con potencial de plusvalía.',
+    url:'https://www.inhauscr.com/blog/mercado-inmobiliario-costa-rica-2026'
+  },
+  {
+    id:11, cat:'segmentos', trend:'up',
+    title:'El segmento de lujo mantiene a Guanacaste como líder en precio por metro cuadrado',
+    source:'El Financiero', date:'7 jun 2026',
+    summary:'Un repaso de listados ultrapremium (entre $487.000 y $77 millones) confirma que Guanacaste tiene el precio por m² más alto del país, mientras el Valle Central sostiene el segmento histórico de alto valor en Santa Ana, Pozos y Escazú.',
+    url:'https://www.elfinancierocr.com/negocios/conozca-5-de-las-casas-mas-caras-a-la-venta-en/HW4UBGYV75D7PNBKFNQQUKNXHY/story/'
+  },
+  {
+    id:12, cat:'segmentos', trend:'up',
+    title:'Gensler proyecta un mercado más flexible y resiliente al clima para 2026',
+    source:'Delfino.cr', date:'16 mar 2026',
+    summary:'El Design Forecast 2026 de Gensler, con datos específicos para Centroamérica por primera vez, señala que la ventaja competitiva estará en proyectos flexibles y resilientes al clima. También destaca el avance de modelos de vivienda público-privada con esquemas de ingresos mixtos.',
+    url:'https://delfino.cr/2026/03/mercado-inmobiliario-en-costa-rica-favorecera-proyectos-flexibles-y-resilientes'
+  },
+  {
+    id:13, cat:'regulatorio', trend:'flat',
+    title:'El régimen de zonas francas sigue siendo motor indirecto de vivienda',
+    source:'Lang Abogados / marco legal', date:'2026',
+    summary:'La Ley 7210 y su reglamento continúan atrayendo inversión que empuja la demanda de vivienda alrededor de los parques industriales y de servicios, un factor clave a monitorear en cantones como Heredia, Alajuela y Cartago al evaluar nuevos terrenos.',
+    url:'https://www.langcr.com/esp/zona_franca_costa_rica.html'
+  },
+  {
+    id:14, cat:'segmentos', trend:'up',
+    title:'La vivienda de primer ingreso concentra la mayor actividad de compradores',
+    source:'INHAUS Costa Rica', date:'16 ene 2026',
+    summary:'El segmento de compradores de primera vivienda, entre $80.000 y $200.000, mantiene la mayor actividad del mercado. La ley de atracción de nómadas digitales sigue impulsando además la demanda de alquileres amueblados en San José, Nosara y Santa Teresa.',
+    url:'https://www.inhauscr.com/blog/mercado-inmobiliario-costa-rica-2026'
+  }
+];
+
+const CAT_LABEL = {mercado:'Mercado', zonas:'Zonas de desarrollo', financiero:'Financiero', regulatorio:'Regulatorio', segmentos:'Segmentos'};
+
+let NEWS = SEED_NEWS.map(n => ({...n, origin:'seed'}));
+let currentFilter = 'todas';
+const grid = document.getElementById('grid');
+const selected = new Set();
+
+function stripHtml(str){
+  const div = document.createElement('div');
+  div.innerHTML = str || '';
+  return (div.textContent || div.innerText || '').replace(/\s+/g,' ').trim();
+}
+
+function truncate(str, n){
+  if(str.length <= n) return str;
+  return str.slice(0, n).replace(/\s+\S*$/, '') + '…';
+}
+
+function categorize(text){
+  const t = text.toLowerCase();
+  const rules = [
+    ['financiero', ['bccr','tasa de interes','tasa de política','hipoteca','crédito','credito','banco central','inflación','inflacion','dólar','dolar','tipo de cambio','tpm']],
+    ['regulatorio', ['ley ','plan regulador','invu','municipalidad','impuesto','reforma','zona franca','permiso de construcción','visado','normativa','decreto','asamblea legislativa','procomer']],
+    ['segmentos', ['lujo','premium','nómada','nomada','primera vivienda','alquiler','oficinas','industrial','logística','logistica','retail','condominio','torre']],
+    ['zonas', ['heredia','guanacaste','alajuela','cartago','puntarenas','limón','limon','santa ana','escazú','escazu','gam','cantón','canton','corredor','región','region']]
+  ];
+  for(const [cat, kws] of rules){
+    if(kws.some(k => t.includes(k))) return cat;
+  }
+  return 'mercado';
+}
+
+function extractSource(title, fallback){
+  const parts = title.split(' - ');
+  if(parts.length > 1) return parts[parts.length-1].trim();
+  return fallback;
+}
+
+function formatDate(d){
+  try{
+    return new Date(d).toLocaleDateString('es-CR', {day:'numeric', month:'short', year:'numeric'});
+  }catch(e){ return ''; }
+}
+
+function render(){
+  const items = currentFilter==='todas' ? NEWS : NEWS.filter(n=>n.cat===currentFilter);
+  if(items.length===0){
+    grid.innerHTML = `<div style="grid-column:1/-1;padding:40px 20px;color:var(--zen-white-dim);font-size:13px;">No hay noticias en esta categoría en este momento.</div>`;
+    return;
+  }
+  grid.innerHTML = items.map(n => `
+    <div class="card" data-cat="${n.cat}">
+      <div class="card-top">
+        <span class="tag tag-${n.cat}">${CAT_LABEL[n.cat]}</span>
+      </div>
+      <div class="card-title">${n.title}</div>
+      <div class="card-meta"><b>${n.source}</b>${n.origin==='live' ? '<span class="live-badge">En vivo</span>' : '<span class="fallback-badge">Curada</span>'} · ${n.date}</div>
+      <div class="card-summary">${n.summary}</div>
+      <div class="card-bottom">
+        <label class="card-select">
+          <input type="checkbox" data-id="${n.id}" ${selected.has(String(n.id))?'checked':''}> Incluir
+        </label>
+        <a class="card-link" href="${n.url}" target="_blank" rel="noopener">Leer fuente &rarr;</a>
+      </div>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener('change', e=>{
+      const id = e.target.dataset.id;
+      if(e.target.checked) selected.add(id); else selected.delete(id);
+      updateExportBar();
+    });
+  });
+}
+render();
+
+document.getElementById('filters').addEventListener('click', e=>{
+  const btn = e.target.closest('.filter-btn');
+  if(!btn) return;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = btn.dataset.filter;
+  render();
+});
+
+const FEEDS = [
+  {label:'El Financiero CR', query:'site:elfinancierocr.com (inmobiliario OR construcción OR vivienda OR "bienes raíces")'},
+  {label:'La Nación CR', query:'site:nacion.com (inmobiliario OR construcción OR vivienda) economía'},
+  {label:'Mercado inmobiliario CR', query:'"mercado inmobiliario" Costa Rica'},
+  {label:'Finanzas y tasas CR', query:'Costa Rica (BCCR OR "tasa de interés" OR hipoteca OR crédito vivienda)'},
+  {label:'Regulación y construcción CR', query:'Costa Rica (CFIA OR "plan regulador" OR INVU OR "zona franca") construcción'}
+];
+
+async function fetchFeed(feed){
+  const gnUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(feed.query)}&hl=es-419&gl=CR&ceid=CR:es-419`;
+  const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(gnUrl)}`;
+  const res = await fetch(proxyUrl);
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if(data.status !== 'ok') throw new Error('feed error');
+  return (data.items || []).map(item => {
+    const cleanTitle = extractSource(item.title, feed.label) === item.title ? item.title : item.title.split(' - ').slice(0,-1).join(' - ');
+    const src = extractSource(item.title, feed.label);
+    return {
+      id: 'live-' + btoa(unescape(encodeURIComponent(item.link))).slice(0,24),
+      cat: categorize(item.title + ' ' + (item.description||'')),
+      title: cleanTitle || item.title,
+      source: src,
+      date: formatDate(item.pubDate),
+      rawDate: item.pubDate,
+      summary: truncate(stripHtml(item.description), 220) || 'Ver el detalle completo en la fuente original.',
+      url: item.link,
+      origin: 'live'
+    };
+  });
+}
+
+async function fetchLive(){
+  const dot = document.getElementById('liveDot');
+  const text = document.getElementById('liveText');
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  dot.classList.add('pulsing');
+  text.textContent = 'Buscando noticias en vivo…';
+
+  const results = await Promise.allSettled(FEEDS.map(fetchFeed));
+  const ok = results.filter(r => r.status==='fulfilled');
+  let liveItems = ok.flatMap(r => r.value);
+
+  const seen = new Set();
+  liveItems = liveItems.filter(it => {
+    if(seen.has(it.url)) return false;
+    seen.add(it.url);
+    return true;
+  });
+  liveItems.sort((a,b) => new Date(b.rawDate||0) - new Date(a.rawDate||0));
+
+  dot.classList.remove('pulsing');
+  if(liveItems.length > 0){
+    NEWS = liveItems;
+    dot.classList.add('on');
+    const now = new Date().toLocaleTimeString('es-CR', {hour:'2-digit', minute:'2-digit'});
+    text.textContent = `En vivo · ${liveItems.length} noticias · ${ok.length}/${FEEDS.length} fuentes respondieron · actualizado ${now}`;
+  } else {
+    NEWS = SEED_NEWS.map(n => ({...n, origin:'seed'}));
+    dot.classList.remove('on');
+    text.textContent = 'No se pudo conectar con las fuentes en vivo — mostrando el resumen curado como respaldo.';
+  }
+  selected.clear();
+  updateExportBar();
+  render();
+  btn.disabled = false;
+}
+
+document.getElementById('refreshBtn').addEventListener('click', fetchLive);
+fetchLive();
+
+function updateExportBar(){
+  const count = selected.size;
+  document.getElementById('selCount').textContent = count;
+  document.getElementById('exportBtn').disabled = count===0;
+  document.getElementById('copyBtn').disabled = count===0;
+}
+
+function buildSummaryText(){
+  const items = NEWS.filter(n=>selected.has(String(n.id)));
+  const fecha = new Date().toLocaleDateString('es-CR', {day:'numeric', month:'long', year:'numeric'});
+  let out = `RESUMEN EJECUTIVO — MERCADO INMOBILIARIO COSTA RICA\nGrupo Zen · Generado el ${fecha}\n`;
+  out += `${items.length} noticia(s) seleccionada(s)\n`;
+  out += '='.repeat(60) + '\n\n';
+  items.forEach((n,i)=>{
+    out += `${i+1}. ${n.title}\n`;
+    out += `   Categoria: ${CAT_LABEL[n.cat]}\n`;
+    out += `   Fuente: ${n.source} — ${n.date}\n\n`;
+    out += `   ${n.summary}\n\n`;
+    out += `   Enlace: ${n.url}\n`;
+    out += '-'.repeat(60) + '\n\n';
+  });
+  return out;
+}
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  if(selected.size===0) return;
+  const text = buildSummaryText();
+  const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `resumen-ejecutivo-grupo-zen-${new Date().toISOString().slice(0,10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('copyBtn').addEventListener('click', async ()=>{
+  if(selected.size===0) return;
+  const text = buildSummaryText();
+  try{
+    await navigator.clipboard.writeText(text);
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  const toast = document.getElementById('toast');
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 1800);
+});
+</script>
+
+</body>
+</html>
