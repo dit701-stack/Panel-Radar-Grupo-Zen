@@ -107,6 +107,7 @@
   .tag-zonas{background:#1f2620;color:#a8caa0;}
   .tag-financiero{background:#20242c;color:#9fb6da;}
   .tag-regulatorio{background:#2c2020;color:#d9a8a0;}
+  .tag-turismo{background:#1c2830;color:#8fc4e8;}
   .tag-segmentos{background:#2a1f2a;color:#cfa8cf;}
   .trend{font-size:15px;line-height:1;color:var(--zen-up);}
   .trend.flat{color:var(--zen-flat);}
@@ -213,6 +214,7 @@
             <option value="financiero">Financiero</option>
             <option value="regulatorio">Político y regulatorio</option>
             <option value="segmentos">Segmentos</option>
+            <option value="turismo">Turismo</option>
           </select>
         </div>
         <div class="manual-field manual-field-full">
@@ -239,6 +241,7 @@
     <button class="filter-btn" data-filter="segmentos">Segmentos</button>
     <button class="filter-btn" data-filter="financiero">Financiero</button>
     <button class="filter-btn" data-filter="regulatorio">Político y regulatorio</button>
+    <button class="filter-btn" data-filter="turismo">Turismo</button>
   </div>
 
   <div class="grid" id="grid"></div>
@@ -264,6 +267,8 @@
       <div class="src-item"><b>PROCOMER</b>Inversión extranjera directa y zonas francas.</div>
       <div class="src-item"><b>Estado de la Nación (PEN)</b>Análisis independiente de vivienda y desarrollo urbano.</div>
       <div class="src-item"><b>Cushman & Wakefield / Gensler / CBRE CR</b>Reportes de mercado oficina, industrial, retail y tendencias de diseño.</div>
+      <div class="src-item"><b>ICT — Instituto Costarricense de Turismo</b>Estadísticas de llegadas internacionales, ocupación hotelera y turismo residencial.</div>
+      <div class="src-item"><b>CANATUR</b>Cámara Nacional de Turismo: coyuntura del sector hotelero y de hospedaje.</div>
     </div>
     <div class="disclaimer">Los resúmenes de este panel son elaborados a partir de coberturas periodísticas y reportes públicos; no sustituyen la lectura de la fuente original, cuyo enlace se incluye en cada tarjeta. Verifique cifras oficiales directamente en BCCR, INEC y CFIA antes de usarlas en documentos formales.</div>
   </footer>
@@ -380,10 +385,17 @@ const SEED_NEWS = [
     source:'INHAUS Costa Rica', date:'16 ene 2026',
     summary:'El segmento de compradores de primera vivienda, entre $80.000 y $200.000, mantiene la mayor actividad del mercado. La ley de atracción de nómadas digitales sigue impulsando además la demanda de alquileres amueblados en San José, Nosara y Santa Teresa.',
     url:'https://www.inhauscr.com/blog/mercado-inmobiliario-costa-rica-2026'
+  },
+  {
+    id:15, cat:'turismo', trend:'up',
+    title:'El turismo sigue impulsando la inversión hotelera y el desarrollo residencial en zonas costeras',
+    source:'Instituto Costarricense de Turismo (ICT)', date:'2026',
+    summary:'La llegada de turistas internacionales mantiene a Guanacaste y la zona sur como polos de inversión hotelera y de segunda vivienda, con proyectos que combinan hospedaje turístico y desarrollo residencial para el segmento de compradores extranjeros.',
+    url:'https://www.ict.go.cr/es/'
   }
 ];
 
-const CAT_LABEL = {mercado:'Mercado', zonas:'Zonas de desarrollo', financiero:'Financiero', regulatorio:'Regulatorio', segmentos:'Segmentos'};
+const CAT_LABEL = {mercado:'Mercado', zonas:'Zonas de desarrollo', financiero:'Financiero', regulatorio:'Regulatorio', segmentos:'Segmentos', turismo:'Turismo'};
 
 const MANUAL_STORAGE_KEY = 'zenPanelManualNews';
 let MANUAL_NEWS = [];
@@ -459,6 +471,7 @@ function categorize(text){
   const rules = [
     ['financiero', ['bccr','tasa de interes','tasa de política','hipoteca','crédito','credito','banco central','inflación','inflacion','dólar','dolar','tipo de cambio','tpm']],
     ['regulatorio', ['ley ','plan regulador','invu','municipalidad','impuesto','reforma','zona franca','permiso de construcción','visado','normativa','decreto','asamblea legislativa','procomer']],
+    ['turismo', ['turismo','turista','turístico','turistico','hotel','hotelero','hospedaje','aerolínea','aerolinea','aeropuerto','ocupación hotelera','ocupacion hotelera',' ict ','instituto costarricense de turismo','ecoturismo','turismo residencial','vacacional','resort','todo incluido','cruceros','visitantes internacionales','llegada de turistas','turismo sostenible']],
     ['segmentos', ['lujo','premium','nómada','nomada','primera vivienda','alquiler','oficinas','industrial','logística','logistica','retail','condominio','torre']],
     ['zonas', ['heredia','guanacaste','alajuela','cartago','puntarenas','limón','limon','santa ana','escazú','escazu','gam','cantón','canton','corredor','región','region']]
   ];
@@ -478,9 +491,17 @@ const REAL_ESTATE_KEYWORDS = [
   'plusvalía','plusvalia','alquileres','arrendatario','proptech','bróker inmobiliario','broker inmobiliario'
 ];
 
+const TOURISM_KEYWORDS = [
+  'turismo','turista','turístico','turistico','hotel','hotelero','hospedaje','hotelería','hoteleria',
+  'aerolínea','aerolinea','aeropuerto','vuelos directos','ocupación hotelera','ocupacion hotelera',
+  'instituto costarricense de turismo',' ict ','ecoturismo','turismo residencial','vacacional','resort',
+  'todo incluido','cruceros','visitantes internacionales','llegada de turistas','turismo sostenible',
+  'airbnb','renta vacacional','segunda vivienda','nómada digital','nomada digital'
+];
+
 function isRealEstateRelevant(text){
   const t = text.toLowerCase();
-  return REAL_ESTATE_KEYWORDS.some(k => t.includes(k));
+  return REAL_ESTATE_KEYWORDS.some(k => t.includes(k)) || TOURISM_KEYWORDS.some(k => t.includes(k));
 }
 
 function hashString(str){
@@ -725,7 +746,8 @@ const FEEDS = [
   {label:'La Nación CR', query:'site:nacion.com (inmobiliario OR "bienes raíces" OR vivienda OR construcción OR "plan regulador")'},
   {label:'Mercado inmobiliario CR', query:'"mercado inmobiliario" Costa Rica'},
   {label:'Finanzas y tasas CR', query:'Costa Rica (BCCR OR "tasa de interés" OR hipoteca OR crédito vivienda)'},
-  {label:'Regulación y construcción CR', query:'Costa Rica (CFIA OR "plan regulador" OR INVU OR "zona franca") construcción'}
+  {label:'Regulación y construcción CR', query:'Costa Rica (CFIA OR "plan regulador" OR INVU OR "zona franca") construcción'},
+  {label:'Turismo Costa Rica', query:'Costa Rica turismo (hotel OR "llegada de turistas" OR "ocupación hotelera" OR ICT OR "turismo residencial" OR aeropuerto)'}
 ];
 
 async function fetchFeed(feed){
