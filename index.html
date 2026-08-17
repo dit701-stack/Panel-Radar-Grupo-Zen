@@ -86,7 +86,15 @@
   .paywall-notice-done a.clear-link{color:#cf8a8a;}
   .manual-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:16px;}
   .manual-tag{background:#20242c; color:#c9a97a;}
-  .filters{display:flex;gap:8px;flex-wrap:wrap;margin:28px 0 24px;}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin:28px 0 12px;}
+  .date-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 24px;}
+  .date-range-custom{display:none; align-items:center; gap:10px; background:var(--zen-panel); border:1px solid var(--zen-line); padding:8px 12px; margin-top:0;}
+  .date-range-custom.open{display:flex; flex-wrap:wrap;}
+  .date-range-custom label{font-size:11px; color:var(--zen-white-dim); display:flex; align-items:center; gap:6px;}
+  .date-range-custom input[type=date]{
+    background:var(--zen-black); border:1px solid var(--zen-line); color:var(--zen-white);
+    font-family:'Inter',sans-serif; font-size:12.5px; padding:6px 8px; border-radius:2px;
+  }
   .filter-btn{
     font-family:'Inter',sans-serif;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
     background:transparent;border:1px solid var(--zen-line);color:var(--zen-white-dim);
@@ -254,6 +262,19 @@
     <button class="filter-btn" data-filter="financiero">Financiero</button>
     <button class="filter-btn" data-filter="regulatorio">Político y regulatorio</button>
     <button class="filter-btn" data-filter="turismo">Turismo</button>
+  </div>
+
+  <div class="date-filters" id="dateFilters">
+    <button class="filter-btn active" data-daterange="todas">Todas las fechas</button>
+    <button class="filter-btn" data-daterange="hoy">Hoy</button>
+    <button class="filter-btn" data-daterange="7dias">Últimos 7 días</button>
+    <button class="filter-btn" data-daterange="30dias">Últimos 30 días</button>
+    <button class="filter-btn" data-daterange="personalizado">Rango personalizado</button>
+    <div class="date-range-custom" id="dateRangeCustom">
+      <label>Desde <input type="date" id="dateFrom"></label>
+      <label>Hasta <input type="date" id="dateTo"></label>
+      <button class="exp-btn primary" id="applyDateRange">Aplicar</button>
+    </div>
   </div>
 
   <div class="grid" id="grid"></div>
@@ -528,6 +549,61 @@ document.getElementById('metricsSubmit').addEventListener('click', ()=>{
 
 let NEWS = applyCompletions([...MANUAL_NEWS, ...SEED_NEWS.map(n => ({...n, origin:'seed'}))]);
 let currentFilter = 'todas';
+let dateRangeFilter = 'todas';
+let customDateFrom = null;
+let customDateTo = null;
+
+const SPANISH_MONTHS = {ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,set:8,oct:9,nov:10,dic:11};
+
+function parseItemDate(n){
+  if(n.rawDate){
+    const d = new Date(n.rawDate);
+    if(!isNaN(d.getTime())) return d;
+  }
+  const s = (n.date || '').toLowerCase();
+  const full = s.match(/(\d{1,2})\s+([a-záéíóúñ]{3,4})\.?\s+(\d{4})/);
+  if(full){
+    const day = parseInt(full[1], 10);
+    const month = SPANISH_MONTHS[full[2].slice(0,3)];
+    const year = parseInt(full[3], 10);
+    if(month !== undefined){
+      return new Date(year, month, day);
+    }
+  }
+  const yearOnly = s.match(/^(\d{4})$/);
+  if(yearOnly){
+    return new Date(parseInt(yearOnly[1], 10), 0, 1);
+  }
+  return null;
+}
+
+function matchesDateRange(n){
+  if(dateRangeFilter === 'todas') return true;
+  const d = parseItemDate(n);
+  if(!d) return true; // si no se puede determinar la fecha, no se oculta por precaucion
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if(dateRangeFilter === 'hoy'){
+    return d >= startOfToday;
+  }
+  if(dateRangeFilter === '7dias'){
+    const cutoff = new Date(startOfToday); cutoff.setDate(cutoff.getDate() - 6);
+    return d >= cutoff;
+  }
+  if(dateRangeFilter === '30dias'){
+    const cutoff = new Date(startOfToday); cutoff.setDate(cutoff.getDate() - 29);
+    return d >= cutoff;
+  }
+  if(dateRangeFilter === 'personalizado'){
+    if(customDateFrom && d < customDateFrom) return false;
+    if(customDateTo && d > customDateTo) return false;
+    return true;
+  }
+  return true;
+}
+
 const grid = document.getElementById('grid');
 const selected = new Set();
 let completingItemId = null;
@@ -619,9 +695,10 @@ function badgeFor(n){
 }
 
 function render(){
-  const items = currentFilter==='todas' ? NEWS : NEWS.filter(n=>n.cat===currentFilter);
+  let items = currentFilter==='todas' ? NEWS : NEWS.filter(n=>n.cat===currentFilter);
+  items = items.filter(matchesDateRange);
   if(items.length===0){
-    grid.innerHTML = `<div style="grid-column:1/-1;padding:40px 20px;color:var(--zen-white-dim);font-size:13px;">No hay noticias en esta categoría en este momento.</div>`;
+    grid.innerHTML = `<div style="grid-column:1/-1;padding:40px 20px;color:var(--zen-white-dim);font-size:13px;">No hay noticias que coincidan con estos filtros.</div>`;
     return;
   }
   grid.innerHTML = items.map(n => `
@@ -702,9 +779,36 @@ render();
 document.getElementById('filters').addEventListener('click', e=>{
   const btn = e.target.closest('.filter-btn');
   if(!btn) return;
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#filters .filter-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   currentFilter = btn.dataset.filter;
+  render();
+});
+
+const dateRangeCustom = document.getElementById('dateRangeCustom');
+document.getElementById('dateFilters').addEventListener('click', e=>{
+  const btn = e.target.closest('[data-daterange]');
+  if(!btn) return;
+  document.querySelectorAll('#dateFilters .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  dateRangeFilter = btn.dataset.daterange;
+
+  if(dateRangeFilter === 'personalizado'){
+    dateRangeCustom.classList.add('open');
+    return; // se aplica solo al hacer clic en "Aplicar"
+  } else {
+    dateRangeCustom.classList.remove('open');
+    customDateFrom = null;
+    customDateTo = null;
+  }
+  render();
+});
+
+document.getElementById('applyDateRange').addEventListener('click', ()=>{
+  const fromVal = document.getElementById('dateFrom').value;
+  const toVal = document.getElementById('dateTo').value;
+  customDateFrom = fromVal ? new Date(fromVal + 'T00:00:00') : null;
+  customDateTo = toVal ? new Date(toVal + 'T23:59:59') : null;
   render();
 });
 
