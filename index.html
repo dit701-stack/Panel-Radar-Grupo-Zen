@@ -43,6 +43,8 @@
   .metric{background:var(--zen-black);padding:16px 18px;}
   .metric-val{font-family:'Archivo',sans-serif;font-weight:700;font-size:22px;color:var(--zen-gold);}
   .metric-label{font-size:11px;color:var(--zen-white-dim);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;}
+  .metric-updated{font-size:10px;color:#6f6e68;margin-top:6px;font-style:italic;}
+  .metrics-edit-row{display:flex;justify-content:flex-end;margin-top:8px;}
 
   /* filters */
   .livebar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:22px;padding:12px 16px;background:var(--zen-panel);border:1px solid var(--zen-line);}
@@ -169,11 +171,21 @@
     <h1>Radar <span>Inmobiliario</span> Costa Rica</h1>
     <div class="updated">Curado para Mercadeo · Actualizado 14 de agosto, 2026 · Fuentes: El Financiero, La Nación y medios especializados</div>
 
-    <div class="metrics">
-      <div class="metric"><div class="metric-val">3,25%</div><div class="metric-label">Tasa política monetaria (BCCR)</div></div>
-      <div class="metric"><div class="metric-val">+64.662</div><div class="metric-label">Viviendas nuevas ocupadas 2025</div></div>
-      <div class="metric"><div class="metric-val">+21%</div><div class="metric-label">Intención de construcción (CFIA, I sem. 2026)</div></div>
-      <div class="metric"><div class="metric-val">7–11%</div><div class="metric-label">Tasas hipotecarias vigentes</div></div>
+    <div class="metrics" id="metricsGrid"></div>
+    <div class="metrics-edit-row">
+      <button class="refresh-btn" id="editMetricsBtn">Editar indicadores</button>
+    </div>
+
+    <div class="manual-form" id="metricsForm">
+      <div class="manual-form-inner">
+        <div class="manual-form-title">Editar indicadores del panel</div>
+        <div class="manual-form-hint">Actualiza el valor cuando veas el dato nuevo publicado en BCCR, INEC o CFIA. La fecha de actualización se guarda sola.</div>
+        <div class="manual-grid" id="metricsFormFields"></div>
+        <div class="manual-actions">
+          <button class="exp-btn secondary" id="metricsCancel">Cancelar</button>
+          <button class="exp-btn primary" id="metricsSubmit">Guardar indicadores</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -252,8 +264,10 @@
     <div class="src-grid">
       <div class="src-item"><b>El Financiero</b>Cobertura de negocios, desarrollo y proyectos inmobiliarios.</div>
       <div class="src-item"><b>La Nación</b>Sección Economía: vivienda, construcción e indicadores del sector.</div>
+      <div class="src-item"><b>CRHoy</b>Cobertura de proyectos, ferias del sector y noticias de construcción.</div>
       <div class="src-item"><b>Delfino.cr</b>Política monetaria, BCCR y análisis económico.</div>
-      <div class="src-item"><b>Semanario Universidad / La República</b>Tasas de interés y regulación financiera.</div>
+      <div class="src-item"><b>La República</b>Bienes raíces, corretaje y regulación financiera.</div>
+      <div class="src-item"><b>Semanario Universidad</b>Tasas de interés y regulación financiera.</div>
       <div class="src-item"><b>Infobae Costa Rica</b>Estadísticas de construcción y permisos.</div>
       <div class="src-item"><b>El Mundo.cr</b>Análisis y propuestas de política de vivienda.</div>
     </div>
@@ -441,6 +455,77 @@ function applyCompletions(items){
   });
 }
 
+const METRICS_STORAGE_KEY = 'zenPanelMetrics';
+const DEFAULT_METRICS = [
+  {id:'tpm', label:'Tasa política monetaria (BCCR)', value:'3,25%', updatedAt:'14 ago 2026'},
+  {id:'viviendas', label:'Viviendas nuevas ocupadas 2025', value:'+64.662', updatedAt:'14 ago 2026'},
+  {id:'construccion', label:'Intención de construcción (CFIA, I sem. 2026)', value:'+21%', updatedAt:'14 ago 2026'},
+  {id:'hipotecas', label:'Tasas hipotecarias vigentes', value:'7–11%', updatedAt:'14 ago 2026'}
+];
+
+let METRICS = DEFAULT_METRICS;
+try{
+  const saved = JSON.parse(localStorage.getItem(METRICS_STORAGE_KEY) || 'null');
+  if(Array.isArray(saved) && saved.length === DEFAULT_METRICS.length){
+    METRICS = saved;
+  }
+}catch(e){
+  METRICS = DEFAULT_METRICS;
+}
+
+function saveMetrics(){
+  try{
+    localStorage.setItem(METRICS_STORAGE_KEY, JSON.stringify(METRICS));
+  }catch(e){
+    console.error('No se pudieron guardar los indicadores:', e);
+  }
+}
+
+function renderMetrics(){
+  const grid = document.getElementById('metricsGrid');
+  grid.innerHTML = METRICS.map(m => `
+    <div class="metric">
+      <div class="metric-val">${m.value}</div>
+      <div class="metric-label">${m.label}</div>
+      <div class="metric-updated">Actualizado: ${m.updatedAt}</div>
+    </div>
+  `).join('');
+}
+renderMetrics();
+
+const metricsForm = document.getElementById('metricsForm');
+document.getElementById('editMetricsBtn').addEventListener('click', ()=>{
+  const fieldsEl = document.getElementById('metricsFormFields');
+  fieldsEl.innerHTML = METRICS.map(m => `
+    <div class="manual-field manual-field-full">
+      <label>${m.label} <span style="color:#6f6e68;text-transform:none;">(actualizado: ${m.updatedAt})</span></label>
+      <input type="text" data-metric-id="${m.id}" value="${m.value}">
+    </div>
+  `).join('');
+  metricsForm.classList.add('open');
+  metricsForm.scrollIntoView({behavior:'smooth', block:'center'});
+});
+
+document.getElementById('metricsCancel').addEventListener('click', ()=>{
+  metricsForm.classList.remove('open');
+});
+
+document.getElementById('metricsSubmit').addEventListener('click', ()=>{
+  const today = new Date().toLocaleDateString('es-CR', {day:'numeric', month:'short', year:'numeric'});
+  document.querySelectorAll('#metricsFormFields input[data-metric-id]').forEach(input=>{
+    const id = input.dataset.metricId;
+    const newVal = input.value.trim();
+    const metric = METRICS.find(m => m.id === id);
+    if(metric && newVal && newVal !== metric.value){
+      metric.value = newVal;
+      metric.updatedAt = today;
+    }
+  });
+  saveMetrics();
+  renderMetrics();
+  metricsForm.classList.remove('open');
+});
+
 let NEWS = applyCompletions([...MANUAL_NEWS, ...SEED_NEWS.map(n => ({...n, origin:'seed'}))]);
 let currentFilter = 'todas';
 const grid = document.getElementById('grid');
@@ -488,7 +573,9 @@ const REAL_ESTATE_KEYWORDS = [
   'plan regulador','zona franca','metro cuadrado','m²','catastro','finca raíz','finca raiz',
   'propiedad','edificio','torre','cfia','invu','visado','crédito de vivienda','credito de vivienda',
   'tasa hipotecaria','fraccionamiento','lote','casa','constructora','obra gris','permiso de construcción',
-  'plusvalía','plusvalia','alquileres','arrendatario','proptech','bróker inmobiliario','broker inmobiliario'
+  'plusvalía','plusvalia','alquileres','arrendatario','proptech','bróker inmobiliario','broker inmobiliario',
+  'corretaje','corredor de bienes raíces','corredor de bienes raices','corredores de bienes raíces',
+  'registro nacional','banhvi','bono de vivienda'
 ];
 
 const TOURISM_KEYWORDS = [
@@ -744,6 +831,9 @@ document.getElementById('mSubmit').addEventListener('click', ()=>{
 const FEEDS = [
   {label:'El Financiero CR', query:'site:elfinancierocr.com (inmobiliario OR construcción OR vivienda OR "bienes raíces")'},
   {label:'La Nación CR', query:'site:nacion.com (inmobiliario OR "bienes raíces" OR vivienda OR construcción OR "plan regulador")'},
+  {label:'CRHoy CR', query:'site:crhoy.com (inmobiliario OR construcción OR vivienda OR "bienes raíces" OR expoconstrucción)'},
+  {label:'La República CR', query:'site:larepublica.net (inmobiliario OR construcción OR vivienda OR "bienes raíces" OR corredores)'},
+  {label:'Delfino.cr', query:'site:delfino.cr (inmobiliario OR construcción OR vivienda OR BCCR OR "tasa de interés")'},
   {label:'Mercado inmobiliario CR', query:'"mercado inmobiliario" Costa Rica'},
   {label:'Finanzas y tasas CR', query:'Costa Rica (BCCR OR "tasa de interés" OR hipoteca OR crédito vivienda)'},
   {label:'Regulación y construcción CR', query:'Costa Rica (CFIA OR "plan regulador" OR INVU OR "zona franca") construcción'},
