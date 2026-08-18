@@ -314,6 +314,7 @@
     <div class="exp-count"><b id="selCount">0</b> noticias seleccionadas para el resumen ejecutivo</div>
     <div class="exp-actions">
       <button class="exp-btn secondary" id="copyBtn" disabled>Copiar resumen</button>
+      <button class="exp-btn secondary" id="brevoBtn" disabled>Generar email (Brevo)</button>
       <button class="exp-btn primary" id="exportBtn" disabled>Descargar resumen ejecutivo</button>
     </div>
   </div>
@@ -1016,6 +1017,7 @@ function updateExportBar(){
   document.getElementById('selCount').textContent = count;
   document.getElementById('exportBtn').disabled = count===0;
   document.getElementById('copyBtn').disabled = count===0;
+  document.getElementById('brevoBtn').disabled = count===0;
 }
 
 function buildSummaryText(){
@@ -1191,6 +1193,143 @@ async function callSummarizeAPI(items){
   return res.json();
 }
 
+function emailTitleFontSize(title){
+  const len = title.length;
+  if(len <= 20) return {size:28, lh:36};
+  if(len <= 30) return {size:24, lh:32};
+  return {size:20, lh:28};
+}
+
+function buildBrevoEmailHTML(aiData, items){
+  const fecha = new Date().toLocaleDateString('es-CR', {day:'numeric', month:'long', year:'numeric'});
+  const fuentesUnicas = [...new Set(items.map(n=>n.source))].join(', ');
+  const title = 'Resumen Ejecutivo — Mercado Inmobiliario Costa Rica';
+  const t = emailTitleFontSize(title);
+  const preheader = (aiData.hallazgoPrincipal || 'Resumen ejecutivo del mercado inmobiliario costarricense.').slice(0, 140);
+
+  const cifrasRows = (aiData.cifras && aiData.cifras.length > 0) ? aiData.cifras.map(c => `
+    <tr>
+      <td style="padding:8px 10px;border-bottom:1px solid #2a2a2a;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#f7f6f2;"><b>${c.etiqueta}</b></td>
+      <td style="padding:8px 10px;border-bottom:1px solid #2a2a2a;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#c8a24d;"><b>${c.valor}</b></td>
+      <td style="padding:8px 10px;border-bottom:1px solid #2a2a2a;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#c9c7c0;">${c.nota||''}</td>
+    </tr>`).join('') : '';
+
+  const cifrasBlock = cifrasRows ? `
+  <tr>
+    <td style="padding:0 30px 8px;">
+      <p style="margin:24px 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:#c8a24d;font-weight:bold;">Principales cifras</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+        ${cifrasRows}
+      </table>
+    </td>
+  </tr>` : '';
+
+  const bulletBlock = (items2, heading) => (items2 && items2.length > 0) ? `
+  <tr>
+    <td style="padding:0 30px 8px;">
+      <p style="margin:24px 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:#c8a24d;font-weight:bold;">${heading}</p>
+      ${items2.map(txt => `<p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:13.5px;line-height:20px;color:#f7f6f2;">&#8226;&nbsp; ${txt}</p>`).join('')}
+    </td>
+  </tr>` : '';
+
+  const noticiasRows = items.map((n,i) => `
+    <tr>
+      <td style="padding:10px 0;border-top:1px solid #2a2a2a;font-family:Arial,Helvetica,sans-serif;font-size:12.5px;color:#c9c7c0;line-height:18px;">
+        <b style="color:#f7f6f2;">${i+1}. ${n.title}</b><br>
+        <span style="color:#9c9c94;font-size:11.5px;">${n.source} — ${n.date}</span>
+        ${(n.url && n.url!=='#') ? ` &middot; <a href="${n.url}" style="color:#c8a24d;text-decoration:none;">Ver original</a>` : ''}
+      </td>
+    </tr>`).join('');
+
+  return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Resumen Ejecutivo — Grupo Zen</title>
+<!--[if mso]>
+<noscript>
+<xml>
+<o:OfficeDocumentSettings>
+<o:PixelsPerInch>96</o:PixelsPerInch>
+</o:OfficeDocumentSettings>
+</xml>
+</noscript>
+<![endif]-->
+<style>
+  body,table,td,a{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}
+  table,td{mso-table-lspace:0pt;mso-table-rspace:0pt;}
+  img{-ms-interpolation-mode:bicubic;border:0;display:block;}
+  body{margin:0;padding:0;width:100%!important;background-color:#0a0a0a;}
+  .email-container{width:100%!important;}
+  @media only screen and (max-width:620px){
+    .email-container{width:100%!important;}
+    .hero-title{font-size:${Math.max(t.size-2,16)}px!important;line-height:${Math.max(t.lh-2,22)}px!important;}
+    .mobile-pad{padding-left:18px!important;padding-right:18px!important;}
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background-color:#0a0a0a;">
+  <span style="display:none;font-size:1px;color:#0a0a0a;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">${preheader}</span>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0a0a0a;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="email-container" style="width:600px;max-width:600px;background-color:#0a0a0a;">
+
+          <tr>
+            <td class="mobile-pad" style="padding:0 30px 4px;">
+              <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:13px;letter-spacing:.14em;color:#f7f6f2;">GRUPO ZEN</p>
+              <p style="margin:2px 0 20px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#c9c7c0;">Radar inmobiliario Costa Rica</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="mobile-pad" style="padding:0 30px 6px;border-bottom:1px solid #2a2a2a;padding-bottom:20px;">
+              <h1 class="hero-title" style="margin:0 0 6px;font-family:Georgia,'Times New Roman',serif;font-size:${t.size}px;line-height:${t.lh}px;color:#f7f6f2;font-weight:bold;">${title}</h1>
+              <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12.5px;color:#c9c7c0;">Generado el ${fecha}</p>
+              <p style="margin:4px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#6f6e68;font-style:italic;">Fuentes: ${fuentesUnicas || 'N/D'}</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="mobile-pad" style="padding:0 30px 8px;">
+              <p style="margin:24px 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:#c8a24d;font-weight:bold;">Hallazgo principal</p>
+              <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:21px;color:#f7f6f2;">${aiData.hallazgoPrincipal || 'No disponible.'}</p>
+            </td>
+          </tr>
+
+          ${cifrasBlock}
+          ${bulletBlock(aiData.tendencias, 'Tendencias identificadas')}
+          ${bulletBlock(aiData.implicaciones, 'Implicaciones para Grupo Zen')}
+
+          <tr>
+            <td class="mobile-pad" style="padding:8px 30px 0;">
+              <p style="margin:24px 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:#c8a24d;font-weight:bold;">Noticias consideradas</p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+                ${noticiasRows}
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="mobile-pad" style="padding:28px 30px 8px;border-top:1px solid #2a2a2a;">
+              <p style="margin:0 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#6f6e68;line-height:16px;">Grupo Zen — Desarrolladora inmobiliaria. Elaborado a partir de coberturas periodísticas públicas y sintetizado con IA. Verifique cifras oficiales en BCCR, INEC y CFIA antes de usarlas en documentos formales.</p>
+              <p style="margin:12px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#6f6e68;">
+                <a href="{{ unsubscribe }}" style="color:#8a7440;">Darse de baja de este correo</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 function downloadHtmlDoc(html){
   const blob = new Blob([html], {type:'text/html;charset=utf-8'});
   const url = URL.createObjectURL(blob);
@@ -1219,6 +1358,35 @@ document.getElementById('exportBtn').addEventListener('click', async ()=>{
     console.error('Fallo el resumen con IA:', err);
     const html = buildFallbackDocumentHTML();
     downloadHtmlDoc(html);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});
+
+document.getElementById('brevoBtn').addEventListener('click', async ()=>{
+  if(selected.size===0) return;
+  const items = NEWS.filter(n=>selected.has(String(n.id)));
+  const btn = document.getElementById('brevoBtn');
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Analizando con IA…';
+
+  try{
+    const aiData = await callSummarizeAPI(items);
+    const html = buildBrevoEmailHTML(aiData, items);
+    const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `email-brevo-grupo-zen-${new Date().toISOString().slice(0,10)}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }catch(err){
+    console.error('Fallo la generacion del email para Brevo:', err);
+    alert('No se pudo generar el email con IA en este momento. Intenta de nuevo en unos segundos.');
   }finally{
     btn.disabled = false;
     btn.textContent = originalLabel;
